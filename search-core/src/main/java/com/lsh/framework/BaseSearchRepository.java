@@ -19,12 +19,8 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
     @SuppressWarnings("deprecation")
     public PageDTO<TPageDTO> search(TPageSearchDTO searchDTO, Class<TPageDTO> pageDTOClass) {
         Map<String, Object> params = new HashMap<>();
-        String countSql = this.countSql();
         String whereSql = this.getWhereSql(searchDTO, searchDTO.getClass(), params);
-        String countQuerySql = String.join(" ", countSql, whereSql);
-        Query countQuery = this.entityManager.createNativeQuery(countQuerySql);
-        this.setParameters(countQuery, params);
-        BigInteger count = (BigInteger) countQuery.getSingleResult();
+        long count = count(searchDTO, params, whereSql);
 
         String orderSql = this.getOrderSql(searchDTO);
         String limitSql = this.getLimitSql(searchDTO);
@@ -34,18 +30,31 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
 
         this.setParameters(selectQuery, params);
         List<TPageDTO> list = selectQuery.getResultList();
-        return new PageDTO<>(list, searchDTO, count.longValue());
+        return new PageDTO<>(list, searchDTO, count);
     }
 
     public long count(TPageSearchDTO searchDTO) {
-        Map<String, Object> params = new HashMap<>();
+        return count(searchDTO, null, null);
+    }
+
+    private long count(TPageSearchDTO searchDTO, Map<String, Object> params, String whereSql) {
         String countSql = this.countSql();
-        String whereSql = this.getWhereSql(searchDTO, searchDTO.getClass(), params);
-        String countQuerySql = String.join(" ", countSql, whereSql);
-        Query countQuery = this.entityManager.createNativeQuery(countQuerySql);
-        this.setParameters(countQuery, params);
-        BigInteger count = (BigInteger) countQuery.getSingleResult();
-        return count.longValue();
+        return Optional.ofNullable(params)
+                .filter(p -> !StringUtils.isEmpty(whereSql))
+                .map(p -> {
+                    String countQuerySql = String.join(" ", countSql, whereSql);
+                    Query countQuery = this.entityManager.createNativeQuery(countQuerySql);
+                    this.setParameters(countQuery, params);
+                    return ((BigInteger) countQuery.getSingleResult()).longValue();
+                })
+                .orElseGet(() -> {
+                    Map<String, Object> params1 = new HashMap<>();
+                    String whereSql1 = this.getWhereSql(searchDTO, searchDTO.getClass(), params1);
+                    String countQuerySql = String.join(" ", countSql, whereSql1);
+                    Query countQuery = this.entityManager.createNativeQuery(countQuerySql);
+                    this.setParameters(countQuery, params1);
+                    return ((BigInteger) countQuery.getSingleResult()).longValue();
+                });
     }
 
     protected void setParameters(Query query, Map<String, Object> params) {
@@ -112,17 +121,17 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
 
         String sqlKeyword = StringUtils.isEmpty(pageQueryParam.sqlKeyword()) ? field.getName() : pageQueryParam.sqlKeyword();
         switch (pageQueryParam.type()) {
-            case EQUAL:
+            case EQ:
                 return String.format("%s = :%s", sqlKeyword, field.getName());
-            case NOT_EQUAL:
+            case NOT_EQ:
                 return String.format("%s != :%s", sqlKeyword, field.getName());
-            case GREAT:
+            case GT:
                 return String.format("%s > :%s", sqlKeyword, field.getName());
-            case GREAT_OR_EQUAL:
+            case GE:
                 return String.format("%s >= :%s", sqlKeyword, field.getName());
-            case LESS:
+            case LT:
                 return String.format("%s < :%s", sqlKeyword, field.getName());
-            case LESS_OR_EQUAL:
+            case LE:
                 return String.format("%s <= :%s", sqlKeyword, field.getName());
             case LIKE:
                 return String.format("%s like CONCAT('%%',:%s,'%%')", sqlKeyword, field.getName());
@@ -136,7 +145,7 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
                 return handleInType(field, params, value, s -> String.format("%s not in (%s)", sqlKeyword, s));
             case CUSTOM:
             default:
-                if (pageQueryParam.customSql() == null || pageQueryParam.customSql().equals("")) {
+                if (StringUtils.isEmpty(pageQueryParam.customSql())) {
                     throw new RuntimeException("customSql不能为空");
                 }
                 return pageQueryParam.customSql();
@@ -156,6 +165,5 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
         } catch (Throwable e) {
             throw new RuntimeException("in查询的情况下，参数类型必须为list类型");
         }
-
     }
 }
