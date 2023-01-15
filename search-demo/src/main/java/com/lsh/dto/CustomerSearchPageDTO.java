@@ -11,13 +11,13 @@ import java.util.List;
 @Setter
 public class CustomerSearchPageDTO extends BaseSearchDTO {
 
-    @PageQueryParam(sqlKeyword = "id", type = PageQueryParam.QueryType.EQUAL)
+    @PageQueryParam(sqlKeyword = "id", type = PageQueryParam.QueryType.EQ)
     private Long id;
 
     @PageQueryParam(sqlKeyword = "id", type = PageQueryParam.QueryType.IN)
     private List<Long> ids;
 
-    @PageQueryParam(sqlKeyword = "wm_level", type = PageQueryParam.QueryType.EQUAL)
+    @PageQueryParam(sqlKeyword = "wm_level", type = PageQueryParam.QueryType.EQ)
     private Integer wmLevel;
 
 }
