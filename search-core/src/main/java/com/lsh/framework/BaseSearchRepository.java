@@ -154,16 +154,35 @@ public abstract class BaseSearchRepository<TPageDTO, TPageSearchDTO extends Base
 
     private String handleInType(Field field, Map<String, Object> params, Object value, Function<String, String> formatFunction) {
         try {
-            List<?> list = (List<?>) value;
-            StringJoiner joiner = new StringJoiner(",");
-            for (Object o : list) {
-                String paramKey = String.format("%s_%s", field.getName(), list.indexOf(o));
-                joiner.add(String.format(":%s", paramKey));
-                params.put(paramKey, o.toString());
+            if (value instanceof List) {
+                List<?> list = (List<?>) value;
+                StringJoiner joiner = new StringJoiner(",");
+                for (Object o : list) {
+                    String paramKey = String.format("%s_%s", field.getName(), list.indexOf(o));
+                    joiner.add(String.format(":%s", paramKey));
+                    params.put(paramKey, o.toString());
+                }
+                return formatFunction.apply(joiner.toString());
+            } else if (value instanceof Object[]) {
+                Object[] objects = (Object[]) value;
+                StringJoiner joiner = new StringJoiner(",");
+                for (int i = 0; i < objects.length; i++) {
+                    String paramKey = String.format("%s_%s", field.getName(), i);
+                    joiner.add(String.format(":%s", paramKey));
+                    params.put(paramKey, objects[i].toString());
+                }
+                return formatFunction.apply(joiner.toString());
+            } else if (value instanceof String) {
+                String str = (String) value;
+                if (StringUtils.isEmpty(str)) {
+                    return "";
+                }
+                return formatFunction.apply(str);
+            } else {
+                throw new RuntimeException("参数类型错误");
             }
-            return formatFunction.apply(joiner.toString());
         } catch (Throwable e) {
-            throw new RuntimeException("in查询的情况下，参数类型必须为list类型");
+            throw new RuntimeException("in查询的情况下，参数只能是List、Object[]、String三种方式之一");
         }
     }
 }
