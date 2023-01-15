@@ -9,11 +9,11 @@ import java.util.List;
 
 @Data
 public class PageDTO<T> {
-    private List<T> content = new ArrayList();
     private int pageIndex;
     private int pageSize;
-    private long totalElements;
     private int totalPages;
+    private long totalElements;
+    private List<T> content = new ArrayList<>();
 
     public PageDTO(List<T> content, int pageIndex, int pageSize, long totalElements) {
         this.content = content;
