@@ -15,19 +15,32 @@ public @interface PageQueryParam {
 
     String customSql() default "";
 
-    public static enum QueryType {
-        EQUAL,
-        NOT_EQUAL,
-        GREAT,
-        GREAT_OR_EQUAL,
-        LESS,
-        LESS_OR_EQUAL,
+    enum QueryType {
+        /** 等于*/
+        EQ,
+        /** 不等于*/
+        NOT_EQ,
+        /** 大于*/
+        GT,
+        /** 大于等于*/
+        GE,
+        /** 小于等于*/
+        LT,
+        /** 小于等于*/
+        LE,
+        /** LIKE*/
         LIKE,
+        /** LIKE 左匹配*/
         LEFT_LIKE,
+        /** LIKE 右匹配*/
         RIGHT_LIKE,
+        /** in*/
         IN,
+        /** not in*/
         NOT_IN,
-        CUSTOM;
+        /** 自定义sql*/
+        CUSTOM,
+        ;
     }
 
 }
