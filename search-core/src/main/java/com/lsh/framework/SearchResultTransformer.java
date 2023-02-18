@@ -49,7 +49,7 @@ public class SearchResultTransformer<T> extends BasicTransformerAdapter {
         String fieldName = resultFields.containsKey(alias) ? alias : UnderlineToCamelUtils.underlineToCamel(alias, true);
         if (resultFields.containsKey(fieldName)) {
             Field field = resultFields.get(fieldName);
-            if (value.getClass().isAssignableFrom(field.getType())) {
+            if (field.getType().isAssignableFrom(value.getClass()) || value.getClass().isAssignableFrom(field.getType())) {
                 field.set(o, value);
                 return;
             }
